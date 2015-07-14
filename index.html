@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Emby portable/offline links</title>
+<link rel="shortcut icon" href="favicon.ico" />
+</head>
+<body>
+<h1>Emby portable/offline links</h1>
+<h2>Links:</h2>
+<p>Latest stable: <span id="stable">Loading..</span>.</p>
+<p>Latest dev: <span id="dev">Loading..</span>.</p>
+<h2>Install instructions:</h2>
+<ul>
+    <li>Stop the current server.</li>
+    <li title="At least Firefox doesn't support the download attribute from a different origin.">Extract the file as <code>.zip</code> file even if the extension might say <code>.exe</code>.</li>
+    <li>Extract to <code>%appdata%\Emby-Server</code>, so that there's a <code>System</code> folder.
+    <li>Start the server again.</li>
+</ul>
+<h2>Contact:</h2>
+<p>Please report bugs to <a href="https://github.com/ljani/emby-portable-links/issues">the issue tracker</a>, thanks.</p>
+<script type="text/javascript">
+(function () {
+    function printVersion(e, selector) {
+        var nodes = document.querySelectorAll(selector);
+        Array.prototype.forEach.call(nodes, function (node) {
+            while (node.hasChildNodes()) {
+                node.removeChild(node.lastChild);
+            }
+
+            var contents;
+            if (undefined === e) {
+                contents = document.createTextNode('Not found, please report a bug!');
+            } else {
+                contents = document.createElement('a');
+                contents.href = e.sourceUrl;
+                contents.download = e.targetFilename;
+                contents.appendChild(document.createTextNode(e.versionStr));
+            }
+            node.appendChild(contents);
+        });
+    }
+
+    var url = 'http://www.mb3admin.com/admin/service/package/retrieveall';
+    var request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (request.readyState === 4) {
+            var stable = undefined;
+            var dev = undefined;
+            if (request.status === 200) {
+                var response = JSON.parse(request.responseText || '[]');
+                var versions = (Array.isArray(response) ? response : [])
+                    .filter(function (e) {
+                        return 'MBServer' === e.name;
+                    })
+                    .map(function (e) {
+                        return e.versions || [];
+                    })
+                    .reduce(function (prev, e) {
+                        return prev.concat(e);
+                    })
+                    .map(function (e) {
+                        e.sortkey = new Date((e.timestamp || '1970-01-01T00:00:00').replace(' ', 'T') + 'Z').getTime();
+                        return e;
+                    }) || [];
+                versions.sort(function (a, b) {
+                    return b.sortkey - a.sortkey;
+                });
+                versions.some(function (e) {
+                    if ('Release' === e.classification) {
+                        stable = e;
+                        return true;
+                    }
+                    return false;
+                });
+                versions.some(function (e) {
+                    if ('Dev' === e.classification) {
+                        dev = e;
+                        return true;
+                    }
+                    return false;
+                });
+            }
+            printVersion(stable, '#stable');
+            printVersion(dev, '#dev');
+        }
+    };
+    request.open('GET', url);
+    request.send();
+})();
+</script>
+</body>
+</html>
