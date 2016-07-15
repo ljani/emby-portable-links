@@ -30,7 +30,7 @@
 <p>Please report bugs to <a href="https://github.com/ljani/emby-portable-links/issues">the issue tracker</a>, thanks.</p>
 <script type="text/javascript">
 (function () {
-    function printVersion(e, selector) {
+    function printVersion(e, selector, required) {
         var nodes = document.querySelectorAll(selector);
         Array.prototype.forEach.call(nodes, function (node) {
             while (node.hasChildNodes()) {
@@ -39,8 +39,12 @@
 
             var contents;
             if (undefined === e) {
-                contents = document.createTextNode('Not found, sorry! Please see the following chapter.');
-                document.querySelector('#problems').style.display = 'block';
+                var msg = 'Not found, sorry!';
+                if (required) {
+                    msg += ' Please see the following chapter.';
+                    document.querySelector('#problems').style.display = 'block';
+                }
+                contents = document.createTextNode(msg);
             } else {
                 contents = document.createElement('a');
                 contents.href = e.sourceUrl;
@@ -91,8 +95,8 @@
                     return false;
                 });
             }
-            printVersion(stable, '#stable');
-            printVersion(dev, '#dev');
+            printVersion(stable, '#stable', true);
+            printVersion(dev, '#dev', false);
         }
     };
     request.open('GET', url);
